@@ -130,13 +130,15 @@ LynxModuleAndroid::invokeMethod(const MethodMetadata& method, Runtime* rt,
   piper::NativeModuleInfoCollectorPtr timing_collector =
       std::make_shared<piper::NativeModuleInfoCollector>(
           delegate_, name_, method_name, first_param_str);
-  TRACE_EVENT_INSTANT(
-      LYNX_TRACE_CATEGORY_JSB, "JSBTiming::jsb_func_call_start",
-      [&first_param_str, start_time](lynx::perfetto::EventContext ctx) {
-        ctx.event()->add_debug_annotations("first_arg", first_param_str);
-        ctx.event()->add_debug_annotations("timestamp",
-                                           std::to_string(start_time));
-      });
+  TRACE_EVENT_INSTANT(LYNX_TRACE_CATEGORY_JSB, "JSBTiming::jsb_func_call_start",
+                      [start_time, collector = timing_collector](
+                          lynx::perfetto::EventContext ctx) {
+                        ctx.event()->add_debug_annotations(
+                            "timestamp", std::to_string(start_time));
+                        if (collector != nullptr) {
+                          ctx.event()->add_flow_ids(collector->FlowId());
+                        }
+                      });
   // We need these information to monitor network request information,
   // the rate of success and the proportion of requests accomplished by
   // Lynx. After fully switch to Lynx Network, we can remove these logics.

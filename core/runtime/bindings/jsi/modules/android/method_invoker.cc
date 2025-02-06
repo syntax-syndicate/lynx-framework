@@ -464,14 +464,6 @@ MethodInvoker::ConvertJSIFunctionToCallbackObject(
     std::string first_arg_str = first_arg->getString(*rt).utf8(*rt);
     callback->SetFirstArg(first_arg_str);
   }
-  uint64_t callback_flow_id = TRACE_FLOW_ID();
-  callback->SetCallbackFlowId(callback_flow_id);
-  TRACE_EVENT_INSTANT(LYNX_TRACE_CATEGORY_JSB, "CreateJSB Callback",
-                      [&](lynx::perfetto::EventContext ctx) {
-                        ctx.event()->add_flow_ids(callback_flow_id);
-                        ctx.event()->add_debug_annotations(
-                            "startTimestamp", std::to_string(start_time));
-                      });
   callbackWrappers_.insert(callback);
   return std::move(callback_pair.second);
 }
@@ -985,10 +977,14 @@ base::expected<piper::Value, JSINativeException> MethodInvoker::InvokeImpl(
   StartRecordFunction();
 #endif
   TRACE_EVENT(LYNX_TRACE_CATEGORY_JSB, "CallJSB",
-              [&, self = shared_from_this()](lynx::perfetto::EventContext ctx) {
+              [&, self = shared_from_this(),
+               collector = timing_collector](lynx::perfetto::EventContext ctx) {
                 ctx.event()->add_debug_annotations("module_name", module_name_);
                 ctx.event()->add_debug_annotations("method_name", method_name_);
                 ctx.event()->add_debug_annotations("first_arg", first_arg_str);
+                if (collector != nullptr) {
+                  ctx.event()->add_flow_ids(collector->FlowId());
+                }
                 if (count != jsArgCount_) {
                   return;
                 }
@@ -1171,10 +1167,13 @@ base::expected<piper::Value, JSINativeException> MethodInvoker::InvokeImpl(
   uint64_t convert_params_start = base::CurrentSystemTimeMilliseconds();
   TRACE_EVENT_INSTANT(
       LYNX_TRACE_CATEGORY_JSB, "JSBTiming::jsb_func_convert_params_start",
-      [&first_arg_str, start_time](lynx::perfetto::EventContext ctx) {
-        ctx.event()->add_debug_annotations("first_arg", first_arg_str);
+      [start_time,
+       collector = timing_collector](lynx::perfetto::EventContext ctx) {
         ctx.event()->add_debug_annotations("timestamp",
                                            std::to_string(start_time));
+        if (collector != nullptr) {
+          ctx.event()->add_flow_ids(collector->FlowId());
+        }
       });
   base::android::JniLocalScope scope(env);
   jvalue java_arguments[argCount];
@@ -1199,11 +1198,13 @@ base::expected<piper::Value, JSINativeException> MethodInvoker::InvokeImpl(
   uint64_t invoke_facade_method_start = base::CurrentSystemTimeMilliseconds();
   TRACE_EVENT_INSTANT(
       LYNX_TRACE_CATEGORY_JSB, "JSBTiming::jsb_func_platform_method_start",
-      [&first_arg_str,
-       invoke_facade_method_start](lynx::perfetto::EventContext ctx) {
-        ctx.event()->add_debug_annotations("first_arg", first_arg_str);
+      [invoke_facade_method_start,
+       collector = timing_collector](lynx::perfetto::EventContext ctx) {
         ctx.event()->add_debug_annotations(
             "timestamp", std::to_string(invoke_facade_method_start));
+        if (collector != nullptr) {
+          ctx.event()->add_flow_ids(collector->FlowId());
+        }
       });
   auto ret = Fire(env, module, java_arguments, rt);
   if (timing_collector != nullptr) {
@@ -1240,22 +1241,20 @@ void MethodInvoker::InvokeCallback(
 
 void MethodInvoker::invokeCallbackInJSThread(
     const std::shared_ptr<ModuleCallbackAndroid>& callback) {
-  TRACE_EVENT(
-      LYNX_TRACE_CATEGORY_JSB, "InvokeCallback",
-      [&](lynx::perfetto::EventContext ctx) {
-        ctx.event()->add_terminating_flow_ids(callback->CallbackFlowId());
-        ctx.event()->add_debug_annotations("module_name", module_name_);
-        ctx.event()->add_debug_annotations("method_name", method_name_);
-        ctx.event()->add_debug_annotations("first_arg", callback->FirstArg());
-        uint64_t cost = -1;
-        uint64_t start = callback->StartTimeMS();
-        if (start > 0) {
-          cost = lynx::base::CurrentTimeMilliseconds() - start;
-        }
-        ctx.event()->add_debug_annotations("startTimestamp",
-                                           std::to_string(start));
-        ctx.event()->add_debug_annotations("timeCost", std::to_string(cost));
-      });
+  TRACE_EVENT(LYNX_TRACE_CATEGORY_JSB, "InvokeCallback",
+              [&](lynx::perfetto::EventContext ctx) {
+                ctx.event()->add_debug_annotations("module_name", module_name_);
+                ctx.event()->add_debug_annotations("method_name", method_name_);
+                uint64_t cost = -1;
+                uint64_t start = callback->StartTimeMS();
+                if (start > 0) {
+                  cost = lynx::base::CurrentTimeMilliseconds() - start;
+                }
+                ctx.event()->add_debug_annotations("startTimestamp",
+                                                   std::to_string(start));
+                ctx.event()->add_debug_annotations("timeCost",
+                                                   std::to_string(cost));
+              });
   std::shared_ptr<LynxPromiseImpl> promise = callback->promise.lock();
   if (promise) {
     if (promise->GetReject() == callback) {

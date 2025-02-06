@@ -103,11 +103,13 @@ void ModuleCallbackAndroid::Invoke(Runtime* runtime,
   uint64_t convert_params_start = base::CurrentSystemTimeMilliseconds();
   TRACE_EVENT_INSTANT(
       LYNX_TRACE_CATEGORY_JSB, "JSBTiming::jsb_callback_convert_params_start",
-      [first_arg = timing_collector_->GetFirstArg(),
-       convert_params_start](lynx::perfetto::EventContext ctx) {
-        ctx.event()->add_debug_annotations("first_arg", first_arg);
+      [convert_params_start,
+       timing_collector = timing_collector_](lynx::perfetto::EventContext ctx) {
         ctx.event()->add_debug_annotations(
             "timestamp", std::to_string(convert_params_start));
+        if (timing_collector != nullptr) {
+          ctx.event()->add_flow_ids(timing_collector->FlowId());
+        }
       });
   auto arr = jsArrayFromJavaOnlyArray(env, arguments.Get(), runtime);
   if (!arr) {
@@ -142,24 +144,28 @@ void ModuleCallbackAndroid::Invoke(Runtime* runtime,
   uint64_t convert_params_end = base::CurrentSystemTimeMilliseconds();
   TRACE_EVENT_INSTANT(
       LYNX_TRACE_CATEGORY_JSB, "JSBTiming::jsb_callback_convert_params_end",
-      [first_arg = timing_collector_->GetFirstArg(), convert_params_start,
-       convert_params_end](lynx::perfetto::EventContext ctx) {
-        ctx.event()->add_debug_annotations("first_arg", first_arg);
+      [convert_params_start, convert_params_end,
+       timing_collector = timing_collector_](lynx::perfetto::EventContext ctx) {
         ctx.event()->add_debug_annotations("timestamp",
                                            std::to_string(convert_params_end));
         ctx.event()->add_debug_annotations(
             "jsb_callback_convert_params",
             std::to_string(convert_params_end - convert_params_start));
+        if (timing_collector != nullptr) {
+          ctx.event()->add_flow_ids(timing_collector->FlowId());
+        }
       });
   TRACE_EVENT_END(LYNX_TRACE_CATEGORY_JSB);
   TRACE_EVENT(LYNX_TRACE_CATEGORY_JSB, "InvokeCallback");
   TRACE_EVENT_INSTANT(
       LYNX_TRACE_CATEGORY_JSB, "JSBTiming::jsb_callback_invoke_start",
-      [first_arg = timing_collector_->GetFirstArg(),
-       convert_params_end](lynx::perfetto::EventContext ctx) {
-        ctx.event()->add_debug_annotations("first_arg", first_arg);
+      [convert_params_end,
+       timing_collector = timing_collector_](lynx::perfetto::EventContext ctx) {
         ctx.event()->add_debug_annotations("timestamp",
                                            std::to_string(convert_params_end));
+        if (timing_collector != nullptr) {
+          ctx.event()->add_flow_ids(timing_collector->FlowId());
+        }
       });
 #if ENABLE_TESTBENCH_RECORDER
   tasm::recorder::NativeModuleRecorder::GetInstance().RecordCallback(

@@ -142,19 +142,9 @@ base::expected<std::unique_ptr<pub::Value>, std::string> LynxModuleDarwin::Invok
     first_arg_str = args->GetValueAtIndex(0)->str();
   }
 
-  TRACE_EVENT(LYNX_TRACE_CATEGORY_JSB, "CallJSB", [&](lynx::perfetto::EventContext ctx) {
-    ctx.event()->add_debug_annotations("module_name", module_name_);
-    ctx.event()->add_debug_annotations("method_name", method_name);
-    ctx.event()->add_debug_annotations("first_arg", first_arg_str);
-  });
   // issue: #1510
   int32_t callErrorCode = error::E_SUCCESS;
   uint64_t start_time = lynx::base::CurrentTimeMilliseconds();
-  TRACE_EVENT_INSTANT(LYNX_TRACE_CATEGORY_JSB, "JSBTiming::jsb_func_call_start",
-                      [&first_arg_str, start_time](lynx::perfetto::EventContext ctx) {
-                        ctx.event()->add_debug_annotations("first_arg", first_arg_str);
-                        ctx.event()->add_debug_annotations("timestamp", std::to_string(start_time));
-                      });
   std::ostringstream invoke_session;
   invoke_session << start_time;
   @try {
@@ -767,13 +757,6 @@ LynxCallbackBlock LynxModuleDarwin::ConvertModuleCallbackToCallbackBlock(
   __block std::string method_name_copy = method_name;
   ALLOW_UNUSED_TYPE uint64_t callback_flow_id = callback->CallbackFlowId();
 
-  TRACE_EVENT_INSTANT(LYNX_TRACE_CATEGORY_JSB, "CreateJSB Callback",
-                      [=](lynx::perfetto::EventContext ctx) {
-                        ctx.event()->add_flow_ids(callback_flow_id);
-                        auto *debug = ctx.event()->add_debug_annotations();
-                        debug->set_name("startTimestamp");
-                        debug->set_string_value(std::to_string(start_time));
-                      });
   return ^(id response) {
     if (wrapperWasCalled) {
       LOGR("LynxModule, callback id: " << callback_id << " is called more than once.");
