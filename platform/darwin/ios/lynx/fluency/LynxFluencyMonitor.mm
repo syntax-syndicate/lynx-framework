@@ -9,6 +9,7 @@
 #import <Lynx/LynxView+Internal.h>
 #import "LynxFPSMonitor.h"
 #import "LynxTemplateRender+Internal.h"
+#import "LynxTraceEvent.h"
 #include "core/services/fluency/fluency_tracer.h"
 
 typedef NS_ENUM(NSInteger, ForceStatus) {
@@ -50,6 +51,10 @@ typedef NS_ENUM(NSInteger, ForceStatus) {
           completion:^(LynxFPSRecord *_Nonnull record) {
             [self stopWithScrollInfo:(LynxScrollInfo *)(record.key)];
           }];
+  // FIXME: Add the 'scene' parameter to the trace later to differentiate whether it is an animation
+  // scene, a scroll scene, etc.
+  LYNX_TRACE_INSTANT_WITH_DEBUG_INFO(LYNX_TRACE_CATEGORY_WRAPPER, @"StartFluencyTrace",
+                                     @{@"tag" : info.tagName});
 }
 
 - (void)stopWithScrollInfo:(LynxScrollInfo *)info {
@@ -59,6 +64,7 @@ typedef NS_ENUM(NSInteger, ForceStatus) {
     return;
   }
   [self reportWithRecord:record info:info];
+  LYNX_TRACE_INSTANT(LYNX_TRACE_CATEGORY_WRAPPER, @"StopFluencyTrace");
 }
 
 - (NSDictionary *)jsonFromRecord:(LynxFPSRecord *)record info:(LynxScrollInfo *)info {
