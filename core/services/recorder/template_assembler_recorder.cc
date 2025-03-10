@@ -454,6 +454,21 @@ void TemplateAssemblerRecorder::RecordRequireTemplate(const std::string& url,
                                                     params_val, record_id);
 }
 
+void TemplateAssemblerRecorder::RecordSwitchEngineFromUIThread(
+    bool attach, int64_t record_id) {
+  if (!TestBenchBaseRecorder::GetInstance().IsRecordingProcess()) {
+    return;
+  }
+  rapidjson::Document::AllocatorType& allocator =
+      TestBenchBaseRecorder::GetInstance().GetAllocator();
+  rapidjson::Value params_val(rapidjson::kObjectType);
+
+  params_val.AddMember(rapidjson::StringRef(kAttach), rapidjson::Value(attach),
+                       allocator);
+  TestBenchBaseRecorder::GetInstance().RecordAction(
+      kFuncSwitchEngineFromUIThread, params_val, record_id);
+}
+
 rapidjson::Value
 TemplateAssemblerRecorder::CreateJSONFromLoadComponentWithCallback(
     const std::string& url, std::vector<uint8_t>& source, bool sync,

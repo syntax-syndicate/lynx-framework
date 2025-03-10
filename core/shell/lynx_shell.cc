@@ -934,6 +934,10 @@ void LynxShell::RunOnTasmThread(std::function<void(void)>&& task) {
 }
 
 void LynxShell::AttachEngineToUIThread() {
+#if ENABLE_TESTBENCH_RECORDER
+  tasm::recorder::TemplateAssemblerRecorder::RecordSwitchEngineFromUIThread(
+      true, reinterpret_cast<int64_t>(this));
+#endif
   if (engine_thread_switch_) {
     switch (current_strategy_) {
       case base::ThreadStrategyForRendering::MOST_ON_TASM:
@@ -951,6 +955,10 @@ void LynxShell::AttachEngineToUIThread() {
 }
 
 void LynxShell::DetachEngineFromUIThread() {
+#if ENABLE_TESTBENCH_RECORDER
+  tasm::recorder::TemplateAssemblerRecorder::RecordSwitchEngineFromUIThread(
+      false, reinterpret_cast<int64_t>(this));
+#endif
   if (engine_thread_switch_) {
     switch (current_strategy_) {
       case base::ThreadStrategyForRendering::ALL_ON_UI:

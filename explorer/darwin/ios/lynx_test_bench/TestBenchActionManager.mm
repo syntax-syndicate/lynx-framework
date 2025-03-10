@@ -630,6 +630,18 @@ static const int kVirtual = 1 << 2;
   [self.lynxView removeObserver:self forKeyPath:@"frame"];
 }
 
+- (void)switchEngineFromUIThread:(NSDictionary*)params {
+  if (_lynxView == nil) {
+    return;
+  }
+  bool attach = [[params objectForKey:@"attach"] boolValue];
+  if (attach) {
+    [_lynxView attachEngineToUIThread];
+  } else {
+    [_lynxView detachEngineFromUIThread];
+  }
+}
+
 - (void)loadTemplate:(NSDictionary*)params {
   NSString* url = [[TestBenchEnv sharedInstance] testBenchUrlPrefix];
   if (_globalPropsCache) {

@@ -76,6 +76,7 @@ public class TestBenchActionManager {
   private static final int END_TESTBENCH = 10;
   private static final int UPDATE_META_DATA = 13;
   private static final int ON_TESTBENCH_COMPLETE = 14;
+  private static final int SWITCH_ENGINE_FROM_UI_THREAD = 15;
   private static final int IS_VIRTUAL_NODE = 1 << 1;
   private static final int IS_FLATTEN_NODE = 1 << 3;
   private final static HashMap<String, Integer> mCanMockFuncMap = new HashMap<>();
@@ -91,6 +92,7 @@ public class TestBenchActionManager {
     mCanMockFuncMap.put("reloadTemplate", RELOAD_TEMPLATE);
     mCanMockFuncMap.put("updateFontScale", UPDATE_FONT_SCALE);
     mCanMockFuncMap.put("updateMetaData", UPDATE_META_DATA);
+    mCanMockFuncMap.put("switchEngineFromUIThread", SWITCH_ENGINE_FROM_UI_THREAD);
   }
 
   // these functions should be call again, when push reload button
@@ -375,6 +377,9 @@ public class TestBenchActionManager {
             break;
           case ON_TESTBENCH_COMPLETE:
             onTestBenchComplete();
+            break;
+          case SWITCH_ENGINE_FROM_UI_THREAD:
+            switchEngineFromUIThread((JSONObject) msg.obj);
             break;
           default:
             break;
@@ -928,6 +933,22 @@ public class TestBenchActionManager {
         templateSource = Base64.decode(params.getString("source"), Base64.DEFAULT);
       }
       mTemplateBundle = TemplateBundle.fromTemplate(templateSource, mTemplateBundleOptions);
+    } catch (JSONException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void switchEngineFromUIThread(JSONObject params) {
+    try {
+      if (mLynxView == null) {
+        return;
+      }
+      boolean attach = params.getBoolean("attach");
+      if (attach) {
+        mLynxView.attachEngineToUIThread();
+      } else {
+        mLynxView.detachEngineFromUIThread();
+      }
     } catch (JSONException e) {
       e.printStackTrace();
     }

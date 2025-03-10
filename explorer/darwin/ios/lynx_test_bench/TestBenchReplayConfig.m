@@ -53,7 +53,7 @@
         initWithObjects:@"setGlobalProps", @"initialLynxView", @"loadTemplate", @"sendEventDarwin",
                         @"updateDataByPreParsedData", @"sendGlobalEvent", @"reloadTemplate",
                         @"updateConfig", @"loadTemplateBundle", @"updateMetaData",
-                        @"updateFontScale", nil];
+                        @"switchEngineFromUIThread", @"updateFontScale", nil];
     _reloadFuncName = [[NSSet alloc]
         initWithObjects:@"sendGlobalEvent", @"updateDataByPreParsedData", @"sendEventDarwin", nil];
 
