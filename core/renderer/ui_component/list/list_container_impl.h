@@ -53,7 +53,8 @@ class ListContainerImpl : public ListContainer::Delegate {
   void UpdateContentOffsetAndSizeToPlatform(float content_size,
                                             float target_content_offset_x,
                                             float target_content_offset_y,
-                                            bool is_init_scroll_offset);
+                                            bool is_init_scroll_offset,
+                                            bool from_layout);
   void UpdateScrollInfo(float estimated_offset, bool smooth, bool scrolling);
   void StartInterceptListElementUpdated();
   void StopInterceptListElementUpdated();

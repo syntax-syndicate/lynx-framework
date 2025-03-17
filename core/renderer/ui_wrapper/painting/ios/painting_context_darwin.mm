@@ -195,7 +195,8 @@ void PaintingContextDarwinRef::ListCellDisappear(int sign, bool isExist,
 void PaintingContextDarwinRef::UpdateContentOffsetForListContainer(int32_t container_id,
                                                                    float content_size,
                                                                    float delta_x, float delta_y,
-                                                                   bool is_init_scroll_offset) {
+                                                                   bool is_init_scroll_offset,
+                                                                   bool from_layout) {
   TRACE_EVENT(LYNX_TRACE_CATEGORY, "UIOperationQueue::UpdateContentOffsetForListContainerTask");
 
   [uiOwner_ updateContentOffsetForListContainer:container_id

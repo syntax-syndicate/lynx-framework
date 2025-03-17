@@ -148,7 +148,7 @@ class ListLayoutManager {
   virtual bool ShouldRecycleItemHolder(ItemHolder* item_holder);
   void RecycleOffScreenItemHolders();
   void FlushContentSizeAndOffsetToPlatform(
-      float content_offset_before_adjustment);
+      float content_offset_before_adjustment, bool from_layout);
   void OnLayoutCompleted();
   void SendLayoutCompleteEvent(float scroll_delta);
   void SendScrollEvents(float scroll_delta, float original_offset,

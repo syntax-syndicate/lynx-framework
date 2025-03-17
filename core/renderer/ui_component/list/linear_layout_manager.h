@@ -122,7 +122,8 @@ class LinearLayoutManager : public ListLayoutManager {
   void HandleLayoutOrScrollResult(LayoutState& layout_state, bool is_layout);
   // Implement preload.
   void HandlePreloadIfNeeded(LayoutState& layout_state,
-                             ListAnchorManager::AnchorInfo& anchor_info);
+                             ListAnchorManager::AnchorInfo& anchor_info,
+                             bool from_layout);
   bool Preload(LayoutState& layout_state);
   void PreloadInternal(LayoutState& layout_state, int target_index,
                        bool preload_section = false);

@@ -97,7 +97,7 @@ void LinearLayoutManager::OnLayoutChildrenInternal(
     // Reset content offset to 0.
     SetContentOffset(0.f);
     FlushContentSizeAndOffsetToPlatform(
-        layout_state.latest_updated_content_offset_);
+        layout_state.latest_updated_content_offset_, true);
     layout_state.latest_updated_content_offset_ = content_offset_;
     // Note: need update on screen children.
     list_children_helper_->UpdateOnScreenChildren(
@@ -120,7 +120,7 @@ void LinearLayoutManager::OnLayoutChildrenInternal(
   // step 2.5 Update sticky items
   UpdateStickyItemsAfterLayout(anchor_info);
   FlushContentSizeAndOffsetToPlatform(
-      layout_state.latest_updated_content_offset_);
+      layout_state.latest_updated_content_offset_, true);
   layout_state.latest_updated_content_offset_ = content_offset_;
 
   // The previous AdjustOffsetWithAnchor was called twice(the second one is
@@ -136,20 +136,21 @@ void LinearLayoutManager::OnLayoutChildrenInternal(
   if (enable_preload_section_) {
     PreloadSectionOnNextFrame();
   } else {
-    HandlePreloadIfNeeded(layout_state, anchor_info);
+    HandlePreloadIfNeeded(layout_state, anchor_info, true);
   }
   TRACE_EVENT_END(LYNX_TRACE_CATEGORY);
 }
 
 void LinearLayoutManager::HandlePreloadIfNeeded(
-    LayoutState& layout_state, ListAnchorManager::AnchorInfo& anchor_info) {
+    LayoutState& layout_state, ListAnchorManager::AnchorInfo& anchor_info,
+    bool from_layout) {
   if (ValidPreloadBufferCount() && Preload(layout_state)) {
     LayoutInvalidItemHolder(0);
     content_size_ = GetTargetContentSize();
     list_anchor_manager_->AdjustContentOffsetWithAnchor(anchor_info,
                                                         content_offset_);
     FlushContentSizeAndOffsetToPlatform(
-        layout_state.latest_updated_content_offset_);
+        layout_state.latest_updated_content_offset_, from_layout);
     layout_state.latest_updated_content_offset_ = content_offset_;
     // Note: need re-update on screen children after preload
     list_children_helper_->UpdateOnScreenChildren(
@@ -495,7 +496,7 @@ void LinearLayoutManager::ScrollByInternal(float content_offset,
   list_anchor_manager_->AdjustContentOffsetWithAnchor(
       anchor_info, layout_state.latest_updated_content_offset_);
   FlushContentSizeAndOffsetToPlatform(
-      layout_state.latest_updated_content_offset_);
+      layout_state.latest_updated_content_offset_, false);
   layout_state.latest_updated_content_offset_ = content_offset_;
   TRACE_EVENT_END(LYNX_TRACE_CATEGORY);
 
@@ -508,7 +509,7 @@ void LinearLayoutManager::ScrollByInternal(float content_offset,
   TRACE_EVENT_BEGIN(LYNX_TRACE_CATEGORY, "HandlePreloadIfNeeded");
   list_children_helper_->UpdateOnScreenChildren(list_orientation_helper_.get(),
                                                 content_offset_);
-  HandlePreloadIfNeeded(layout_state, anchor_info);
+  HandlePreloadIfNeeded(layout_state, anchor_info, false);
   TRACE_EVENT_END(LYNX_TRACE_CATEGORY);
 
   // step 5. Handle scroll result.

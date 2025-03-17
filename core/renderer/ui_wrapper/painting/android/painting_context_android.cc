@@ -293,7 +293,8 @@ void PaintingContextAndroidRef::RemoveListItemPaintingNode(int list_sign,
 
 void PaintingContextAndroidRef::UpdateContentOffsetForListContainer(
     int32_t container_id, float content_size, float target_content_offset_x,
-    float target_content_offset_y, bool is_init_scroll_offset) {
+    float target_content_offset_y, bool is_init_scroll_offset,
+    bool from_layout) {
   TRACE_EVENT(LYNX_TRACE_CATEGORY,
               "UIOperationQueue::UpdateContentOffsetForListContainerTask");
 

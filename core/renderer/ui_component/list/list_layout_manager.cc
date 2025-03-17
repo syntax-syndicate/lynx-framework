@@ -285,7 +285,7 @@ void ListLayoutManager::RecycleOffScreenItemHolders() {
 // Update content size and content offset and flush to platform by invoking
 // ListContainer::UpdateContentOffsetAndSizeToPlatform().
 void ListLayoutManager::FlushContentSizeAndOffsetToPlatform(
-    float content_offset_before_adjustment) {
+    float content_offset_before_adjustment, bool from_layout) {
   content_offset_ = ClampContentOffsetToEdge(content_offset_, content_size_);
   float delta_x = orientation_ == list::Orientation::kVertical
                       ? 0.f
@@ -297,7 +297,8 @@ void ListLayoutManager::FlushContentSizeAndOffsetToPlatform(
     list_container_->UpdateContentOffsetAndSizeToPlatform(
         content_size_, delta_x, delta_y,
         list_anchor_manager_->initial_scroll_index_status() ==
-            list::InitialScrollIndexStatus::kSet);
+            list::InitialScrollIndexStatus::kSet,
+        from_layout);
   }
   FlushScrollInfoToPlatformIfNeeded();
 }

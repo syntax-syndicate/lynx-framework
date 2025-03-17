@@ -182,11 +182,11 @@ void ListContainerImpl::FlushPatching() {
 // Update content offset and size to platform view.
 void ListContainerImpl::UpdateContentOffsetAndSizeToPlatform(
     float content_size, float delta_x, float delta_y,
-    bool is_init_scroll_offset) {
+    bool is_init_scroll_offset, bool from_layout) {
   if (element_) {
     element_->painting_context()->UpdateContentOffsetForListContainer(
         element_->impl_id(), content_size, delta_x, delta_y,
-        is_init_scroll_offset);
+        is_init_scroll_offset, from_layout);
   }
 }
 

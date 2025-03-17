@@ -179,7 +179,7 @@ void StaggeredGridLayoutManager::OnLayoutChildrenInternal(
     content_size_ = GetTargetContentSize();
     SetContentOffset(0.f);
     FlushContentSizeAndOffsetToPlatform(
-        layout_state.latest_updated_content_offset_);
+        layout_state.latest_updated_content_offset_, true);
     layout_state.latest_updated_content_offset_ = content_offset_;
     // Note: need update on screen children.
     list_children_helper_->UpdateOnScreenChildren(
@@ -222,7 +222,7 @@ void StaggeredGridLayoutManager::OnLayoutChildrenInternal(
   // step 2.5 Update sticky items.
   UpdateStickyItemsAfterLayout(anchor_info);
   FlushContentSizeAndOffsetToPlatform(
-      layout_state.latest_updated_content_offset_);
+      layout_state.latest_updated_content_offset_, true);
   layout_state.latest_updated_content_offset_ = content_offset_;
   TRACE_EVENT_END(LYNX_TRACE_CATEGORY);
 
@@ -571,7 +571,7 @@ void StaggeredGridLayoutManager::ScrollByInternal(float content_offset,
               "StaggeredGridLayoutManager::ScrollByInternal");
   float delta = content_offset - last_content_offset_;
   if (!list_container_ || fabs(delta) < 10e-6) {
-    FlushContentSizeAndOffsetToPlatform(content_offset);
+    FlushContentSizeAndOffsetToPlatform(content_offset, false);
     last_content_offset_ = content_offset_;
     return;
   }
@@ -591,7 +591,7 @@ void StaggeredGridLayoutManager::ScrollByInternal(float content_offset,
   content_size_ = GetTargetContentSize();
   UpdateStickyItems();
   // TODO(fangzhou.fz) adjust offset for sticky-item
-  FlushContentSizeAndOffsetToPlatform(content_offset_before_adjustment);
+  FlushContentSizeAndOffsetToPlatform(content_offset_before_adjustment, false);
   list_children_helper_->UpdateOnScreenChildren(list_orientation_helper_.get(),
                                                 content_offset_);
 
