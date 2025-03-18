@@ -84,6 +84,8 @@ if (is_android) {
     "android/native_facade_android.h",
     "android/native_facade_reporter_android.cc",
     "android/native_facade_reporter_android.h",
+    "android/page_config_converter_android.cc",
+    "android/page_config_converter_android.h",
     "android/platform_call_back_android.cc",
     "android/platform_call_back_android.h",
     "android/tasm_platform_invoker_android.cc",
