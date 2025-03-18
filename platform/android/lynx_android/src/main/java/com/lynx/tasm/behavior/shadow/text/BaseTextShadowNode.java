@@ -677,9 +677,10 @@ public class BaseTextShadowNode extends ShadowNode {
     // Do not do this as it will slow down layout.draw(), do it by TextPaint
     // instead.
     // You can do it with span while you want some effect like rich text.
-    if (getTextAttributes().mFontColor != null) {
-      ForegroundColorSpan foregroundColorSpan =
-          new ForegroundColorSpan(getTextAttributes().mFontColor);
+    if (getTextAttributes().mFontColor != null || getTextAttributes().mTextStrokeWidth > 0.f) {
+      int color =
+          getTextAttributes().mFontColor == null ? Color.BLACK : getTextAttributes().mFontColor;
+      ForegroundColorSpan foregroundColorSpan = new ForegroundColorSpan(color);
       configTextStroke(foregroundColorSpan);
       ops.add(new SetSpanOperation(start, end, foregroundColorSpan));
     }
@@ -736,9 +737,12 @@ public class BaseTextShadowNode extends ShadowNode {
 
     // Set text font weight and font style
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !mForceFakeBold) {
-      ops.add(new SetSpanOperation(start, end,
-          new CustomStyleSpan(getTextAttributes().mFontStyle, getTextAttributes().mFontWeight,
-              getTextAttributes().mFontFamily)));
+      if (getTextAttributes().mFontStyle != Typeface.NORMAL
+          || getTextAttributes().mFontWeight != Typeface.NORMAL) {
+        ops.add(new SetSpanOperation(start, end,
+            new CustomStyleSpan(getTextAttributes().mFontStyle, getTextAttributes().mFontWeight,
+                getTextAttributes().mFontFamily)));
+      }
     } else {
       // fallback to lower level api
       if (getTextAttributes().mFontStyle == Typeface.BOLD

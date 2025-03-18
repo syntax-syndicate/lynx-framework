@@ -291,11 +291,6 @@ public class TextShadowNode extends BaseTextShadowNode implements CustomMeasureF
               (int) getTextAttributes().mTextIndent.getValue(getStyle().getWidth()), 0)));
     }
     super.buildStyledSpan(start, end, ops);
-    if (getTextAttributes().mFontColor == null) {
-      ForegroundColorSpan foregroundColorSpan = new ForegroundColorSpan(Color.BLACK);
-      configTextStroke(foregroundColorSpan);
-      ops.add(new SetSpanOperation(start, end, foregroundColorSpan));
-    }
     // try to download font if needed
     if (!TextUtils.isEmpty(getTextAttributes().mFontFamily)) {
       String fontFamily = getTextAttributes().mFontFamily;
