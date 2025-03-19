@@ -19,7 +19,10 @@ Pod::Spec.new do |spec|
   spec.user_target_xcconfig = { "HEADER_SEARCH_PATHS" => "\"$(PODS_ROOT)/TestBenchReplay\"" }
 
   spec.pod_target_xcconfig = {
+    "CLANG_ENABLE_MODULES" => "NO",
     "DEFINES_MODULE" => "YES",
   }
   spec.ios.deployment_target = "10.0"
+  spec.dependency  "Lynx"
+  spec.dependency  "LynxDevtool"
 end

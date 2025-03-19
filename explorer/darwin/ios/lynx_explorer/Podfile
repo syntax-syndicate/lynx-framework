@@ -18,6 +18,7 @@ post_install do |installer|
 end
 
 target 'LynxExplorer' do
+  use_frameworks! :linkage => :static
   pod 'Lynx', :path => '../../../../..', :subspecs => [
    'Framework',
    'Replay',

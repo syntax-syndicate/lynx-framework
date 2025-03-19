@@ -329,6 +329,8 @@ class Writer:
       dir = ''
       if include.startswith('//PODS_ROOT'):
         dir = include.replace('//PODS_ROOT', '${PODS_ROOT}')
+      elif include.startswith('//PODS_CONFIGURATION_BUILD_DIR'):
+        dir = include.replace('//PODS_CONFIGURATION_BUILD_DIR', '${PODS_CONFIGURATION_BUILD_DIR}')
       elif include.startswith('//TARGET_BUILD_DIR'):
         dir = include.replace('//TARGET_BUILD_DIR', '${TARGET_BUILD_DIR}')
       elif include.startswith('//PODS_TARGET_SRCROOT'):
