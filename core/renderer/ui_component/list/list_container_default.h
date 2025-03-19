@@ -39,8 +39,8 @@ class ListContainerDefault : public ListContainer::Delegate {
                           const lepus::Value& value) override {}
   void PropsUpdateFinish() override {}
   void OnListItemLayoutUpdated(Element* component) override {}
-  void UpdateBatchRenderStrategy(list::BatchRenderStrategy strategy) {}
-  list::BatchRenderStrategy GetBatchRenderStrategy() {
+  void UpdateBatchRenderStrategy(list::BatchRenderStrategy strategy) override {}
+  list::BatchRenderStrategy GetBatchRenderStrategy() override {
     return list::BatchRenderStrategy::kDefault;
   }
 
