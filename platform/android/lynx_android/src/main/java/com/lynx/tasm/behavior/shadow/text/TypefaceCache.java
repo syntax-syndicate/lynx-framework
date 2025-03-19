@@ -94,6 +94,20 @@ public class TypefaceCache {
     sTypefaceCache.put(typeface, typefaces);
   }
 
+  /**
+   * This method will remove pre-registered font cache from LazyProvider
+   * @param fontFamilyName
+   * - null, clear all font cache
+   * - non null, clear the specific fontFamily
+   */
+  public synchronized static void removePreRegisteredFontCache(@NonNull String fontFamilyName) {
+    if (fontFamilyName == null) {
+      sFontFamilyCache.clear();
+    } else {
+      sFontFamilyCache.remove(fontFamilyName);
+    }
+  }
+
   public static void cacheFullStyleTypefacesFromAssets(
       AssetManager assetManager, String fontFamilyName, String path) {
     for (int style = 0; style < sMaxStyles; ++style) {
