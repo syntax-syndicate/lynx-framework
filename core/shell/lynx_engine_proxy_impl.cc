@@ -113,7 +113,7 @@ void LynxEngineProxyImpl::StartEventGenerate(const pub::Value& event_params) {
   }
   auto params_value = pub::ValueUtils::ConvertValueToLepusValue(event_params);
   engine_actor_->Act([params_value](auto& engine) {
-    engine->StartEventGenerate(params_value);
+    engine->StartEventGenerate(std::move(params_value));
   });
 }
 
