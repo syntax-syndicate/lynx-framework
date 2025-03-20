@@ -517,6 +517,8 @@ class FiberElement : public Element, public SelectorItem {
     MarkRequireFlush();
   }
 
+  void ResetAllDirtyBits() { dirty_ = 0; }
+
   bool StyleDirty() const { return dirty_ & kDirtyStyle; }
 
   bool AttrDirty() const { return dirty_ & kDirtyAttr; }
@@ -829,6 +831,16 @@ class FiberElement : public Element, public SelectorItem {
   void ConsumeStyleInternal(
       const StyleMap& styles, StyleMap* inherit_styles,
       std::function<bool(CSSPropertyID, const tasm::CSSValue&)> should_skip);
+
+  bool ConsumeAllAttributes();
+
+  void PerformElementContainerCreateOrUpdate(bool need_update);
+
+  bool ShouldProcessParallelTasks() {
+    return parallel_flush_ ||
+           resolve_status_ == AsyncResolveStatus::kSyncResolving;
+  }
+  ParallelFlushReturn CreateParallelTaskHandler();
 
   void CacheStyleFromAttributes(CSSPropertyID id, CSSValue&& value);
   void CacheStyleFromAttributes(CSSPropertyID id, const lepus::Value& value);

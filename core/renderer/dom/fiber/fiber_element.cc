@@ -864,27 +864,7 @@ ParallelFlushReturn FiberElement::PrepareForCreateOrUpdate() {
   bool need_update = false;
 
   // Need process attributes first.
-  if (dirty_ & kDirtyAttr) {
-    TRACE_EVENT(LYNX_TRACE_CATEGORY, "FiberElement::HandleAttr",
-                [this](lynx::perfetto::EventContext ctx) {
-                  UpdateTraceDebugInfo(ctx.event());
-                });
-    for (const auto &attr : updated_attr_map_) {
-      SetAttributeInternal(attr.first, attr.second);
-      need_update = true;
-    }
-    for (const auto &attr : reset_attr_vec_) {
-      ResetAttribute(attr);
-      need_update = true;
-    }
-    if (updated_attr_map_.size() > 0) {
-      PropsUpdateFinish();
-    }
-
-    updated_attr_map_.clear();
-    reset_attr_vec_.clear();
-    dirty_ &= ~kDirtyAttr;
-  }
+  need_update = ConsumeAllAttributes();
 
   // If it's the first flush of the element and parsed_styles_map_ is empty, we
   // can take the fast path, directly using parsed_styles_map_ as the updated
@@ -1313,54 +1293,20 @@ ParallelFlushReturn FiberElement::PrepareForCreateOrUpdate() {
     }
   }
 
-  // actions
-  if (dirty_ & kDirtyCreated) {
-    TRACE_EVENT(LYNX_TRACE_CATEGORY, "FiberElement::HandleCreate",
-                [this](lynx::perfetto::EventContext ctx) {
-                  UpdateTraceDebugInfo(ctx.event());
-                });
-    // FIXME(linxs): FlushProps can be optimized, for example can we just
-    // create viewElement,imageElement,textElement.. directly?
-    FlushProps();
-    dirty_ &= ~kDirtyCreated;
-  } else if (need_update || dirty_ & kDirtyForceUpdate) {
-    if (prop_bundle_) {
-      TriggerElementUpdate();
-    }
-    HandleDelayTask([this]() { element_container()->StyleChanged(); });
-  }
+  // Commit Create or Update UI Ops
+  PerformElementContainerCreateOrUpdate(need_update);
 
+  // update to layout node
   UpdateLayoutNodeByBundle();
 
-  dirty_ &= ~kDirtyForceUpdate;
   ResetPropBundle();
 
-  // Remaining Layout Task should be returned to be executed in threaded flush
-  // or sync resolving(i.e. PageElement) scenario
-  if (this->parallel_flush_ ||
-      this->resolve_status_ == AsyncResolveStatus::kSyncResolving) {
-    this->parallel_flush_ = false;
-    this->UpdateResolveStatus(AsyncResolveStatus::kResolved);
-    return [this]() {
-      TRACE_EVENT(LYNX_TRACE_CATEGORY,
-                  "FiberElement::HandleParallelReduceTasks");
-      for (const auto &task : parallel_reduce_tasks_) {
-        task();
-      }
-      parallel_reduce_tasks_.clear();
-      // Executing task in parallel_reduce_tasks_ may produce prop_bundle_,
-      // need to consume newly created prop_bundle_
-      if (prop_bundle_) {
-        TriggerElementUpdate();
-        UpdateLayoutNodeByBundle();
-        ResetPropBundle();
-      }
-      this->UpdateResolveStatus(AsyncResolveStatus::kUpdated);
-      VerifyKeyframePropsChangedHandling();
-    };
+  if (ShouldProcessParallelTasks()) {
+    return CreateParallelTaskHandler();
   }
 
   VerifyKeyframePropsChangedHandling();
+
   UpdateInheritedProperty();
 
   return []() {};
@@ -2098,6 +2044,74 @@ void FiberElement::ConsumeStyleInternal(
   consume_func(styles, false);
 }
 
+bool FiberElement::ConsumeAllAttributes() {
+  bool need_update = false;
+  if (dirty_ & kDirtyAttr) {
+    TRACE_EVENT(LYNX_TRACE_CATEGORY, "FiberElement::HandleAttr",
+                [this](lynx::perfetto::EventContext ctx) {
+                  UpdateTraceDebugInfo(ctx.event());
+                });
+    for (const auto &attr : updated_attr_map_) {
+      SetAttributeInternal(attr.first, attr.second);
+      need_update = true;
+    }
+    for (const auto &attr : reset_attr_vec_) {
+      ResetAttribute(attr);
+      need_update = true;
+    }
+    if (updated_attr_map_.size() > 0) {
+      PropsUpdateFinish();
+    }
+
+    updated_attr_map_.clear();
+    reset_attr_vec_.clear();
+    dirty_ &= ~kDirtyAttr;
+  }
+  return need_update;
+}
+
+void FiberElement::PerformElementContainerCreateOrUpdate(bool need_update) {
+  if (dirty_ & kDirtyCreated) {
+    TRACE_EVENT(LYNX_TRACE_CATEGORY, "FiberElement::HandleCreate",
+                [this](lynx::perfetto::EventContext ctx) {
+                  UpdateTraceDebugInfo(ctx.event());
+                });
+    // FIXME(linxs): FlushProps can be optimized, for example can we just
+    // create viewElement,imageElement,textElement.. directly?
+    FlushProps();
+    dirty_ &= ~kDirtyCreated;
+  } else if (need_update || dirty_ & kDirtyForceUpdate) {
+    if (prop_bundle_) {
+      TriggerElementUpdate();
+    }
+    HandleDelayTask([this]() { element_container()->StyleChanged(); });
+  }
+  dirty_ &= ~kDirtyForceUpdate;
+}
+
+ParallelFlushReturn FiberElement::CreateParallelTaskHandler() {
+  // Remaining Layout Task should be returned to be executed in threaded flush
+  // or sync resolving(i.e. PageElement) scenario
+  this->parallel_flush_ = false;
+  this->UpdateResolveStatus(AsyncResolveStatus::kResolved);
+  return [this]() {
+    TRACE_EVENT(LYNX_TRACE_CATEGORY, "FiberElement::HandleParallelReduceTasks");
+    for (const auto &task : parallel_reduce_tasks_) {
+      task();
+    }
+    parallel_reduce_tasks_.clear();
+    // Executing task in parallel_reduce_tasks_ may produce prop_bundle_,
+    // need to consume newly created prop_bundle_
+    if (prop_bundle_) {
+      TriggerElementUpdate();
+      UpdateLayoutNodeByBundle();
+      ResetPropBundle();
+    }
+    this->UpdateResolveStatus(AsyncResolveStatus::kUpdated);
+    VerifyKeyframePropsChangedHandling();
+  };
+}
+
 void FiberElement::CacheStyleFromAttributes(CSSPropertyID id,
                                             CSSValue &&value) {
   styles_from_attributes_.insert_or_assign(id, std::move(value));
@@ -2409,7 +2423,9 @@ void FiberElement::FlushProps() {
             return radon_element->TendToFlatten();
           }
         };
-    platform_is_flatten = painting_context()->IsFlatten(std::move(func));
+    if (!is_virtual_) {
+      platform_is_flatten = painting_context()->IsFlatten(std::move(func));
+    }
     bool is_layout_only = CanBeLayoutOnly() || is_virtual_;
     is_layout_only_ = is_layout_only;
     // native layer don't flatten.
@@ -2423,6 +2439,9 @@ void FiberElement::FlushProps() {
 void FiberElement::RecursivelyMarkChildrenCSSVariableDirty(
     const lepus::Value &css_variable_updated) {
   for (const auto &child : scoped_children_) {
+    if (child->is_raw_text()) {
+      continue;
+    }
     lepus::Value css_variable_updated_merged = css_variable_updated;
     // first, merge changing_css_variables with element's css_variable,
     // element's css_variable is with high priority.
@@ -2651,6 +2670,7 @@ void FiberElement::SetFontSize() {
     }
 
     PreparePropBundleIfNeed();
+
     prop_bundle_->SetProps(
         CSSProperty::GetPropertyName(CSSPropertyID::kPropertyIDFontSize)
             .c_str(),
@@ -3212,6 +3232,9 @@ std::optional<CSSValue> FiberElement::GetElementStyle(
 
 void FiberElement::UpdateDynamicElementStyle(uint32_t style,
                                              bool force_update) {
+  if (is_raw_text()) {
+    return;
+  }
   bool inner_force_update = false || force_update;
 
   if ((dynamic_style_flags_ > 0 || inner_force_update) && !is_wrapper()) {

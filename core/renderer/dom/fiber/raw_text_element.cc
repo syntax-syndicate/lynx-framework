@@ -14,5 +14,24 @@ void RawTextElement::SetText(const lepus::Value& text) {
   SetAttribute(BASE_STATIC_STRING(kTextAttr), text);
 }
 
+ParallelFlushReturn RawTextElement::PrepareForCreateOrUpdate() {
+  bool need_update = ConsumeAllAttributes();
+
+  PerformElementContainerCreateOrUpdate(need_update);
+
+  // reset all dirty bits, some bits may never be processed
+  ResetAllDirtyBits();
+
+  UpdateLayoutNodeByBundle();
+
+  ResetPropBundle();
+
+  if (ShouldProcessParallelTasks()) {
+    return CreateParallelTaskHandler();
+  }
+
+  return []() {};
+}
+
 }  // namespace tasm
 }  // namespace lynx
