@@ -4,6 +4,8 @@
 package com.lynx.tasm;
 
 import androidx.annotation.Nullable;
+import com.lynx.tasm.LynxEnv;
+import com.lynx.tasm.LynxEnvKey;
 import com.lynx.tasm.base.LLog;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +46,11 @@ public class LynxGroup {
     this.mID = builder.mID != null ? builder.mID : generateID();
     this.mPreloadJSPaths = builder.mPreloadJSPaths;
     this.mEnableJSGroupThread = builder.mEnableJSGroupThread;
+    if (!this.mEnableJSGroupThread) {
+      this.mEnableJSGroupThread =
+          LynxEnv.getBooleanFromExternalEnv(LynxEnvKey.ENABLE_MULTI_JS_THREAD_BY_DEFAULT, false);
+    }
+
     this.mEnableV8 = builder.mEnableV8;
     this.mConfig = builder.mConfig;
 

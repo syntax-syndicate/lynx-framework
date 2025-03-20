@@ -286,8 +286,10 @@ fml::RefPtr<fml::TaskRunner> TaskRunnerManufactor::GetJSRunner(
   } else {
     unsigned char group_thread_name_last_char =
         static_cast<unsigned char>(js_group_thread_name.back());
-    return GetJSGroupThreadCache(js_thread_name,
-                                 std::thread::hardware_concurrency())
+    static auto js_thread_count = tasm::LynxEnv::GetInstance().GetLongEnv(
+        tasm::LynxEnv::Key::MULTI_JS_THREAD_COUNT,
+        std::thread::hardware_concurrency());
+    return GetJSGroupThreadCache(js_thread_name, js_thread_count)
         .GetTaskRunner(group_thread_name_last_char);
   }
 }

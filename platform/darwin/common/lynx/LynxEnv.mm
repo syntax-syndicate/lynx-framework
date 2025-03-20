@@ -584,7 +584,8 @@
     @(LynxEnvEnableLifecycleTimeReport) : @"enable_lifecycle_time_report",
     @(LynxEnvCachesCleanupUntrackedFiles) : @"caches_cleanup_untracked_files",
     @(LynxEnvEnableTextContainerOpt) : @"enable_text_container_opt",
-    @(LynxEnvEnableTextStorageDeallocFix) : @"enable_text_storage_dealloc_fix"
+    @(LynxEnvEnableTextStorageDeallocFix) : @"enable_text_storage_dealloc_fix",
+    @(LynxEnvEnableJSGroupThreadByDefault) : @"enable_multi_js_thread_by_default"
   };
   NSString *keyString = envKeyBinding[@(key)];
   NSAssert(keyString.length > 0, @"LynxEnv key string should not be nill.");
