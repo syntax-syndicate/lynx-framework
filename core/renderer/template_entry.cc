@@ -332,15 +332,21 @@ lepus::Value TemplateEntry::ElementFromBinary(const std::string& key,
   if (reader_) {
     auto result = reader_->GetElementTemplateParseResult(key);
     if (result.first != nullptr && result.first->exist_) {
+      // TODO(songshourui.null): It may be worth posting another async task to
+      // fix the issue where the subsequent `Element Template` cannot
+      // asynchronously create the `Element Tree` when the `Element Template` is
+      // reused.
       template_bundle_.element_template_infos_[key] = result.first;
       return TreeResolver::InitElementTree(std::move(result.second), pid,
                                            manager, GetStyleSheetManager());
     }
   }
 
-  // TODO(songshourui.null): It may be worth posting another async task to fix
-  // the issue where the subsequent `Element Template` cannot asynchronously
-  // create the `Element Tree` when the `Element Template` is reused.
+  auto result = template_bundle_.TryGetElements(key);
+  if (result.has_value()) {
+    return TreeResolver::InitElementTree(std::move(*result), pid, manager,
+                                         GetStyleSheetManager());
+  }
 
   auto& info = GetElementTemplateInfo(key);
   return TreeResolver::InitElementTree(TreeResolver::FromTemplateInfo(info),

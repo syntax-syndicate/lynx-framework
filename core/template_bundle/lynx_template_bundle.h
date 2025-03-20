@@ -23,6 +23,7 @@
 #include "core/runtime/vm/lepus/function.h"
 #include "core/runtime/vm/lepus/lepus_value.h"
 #include "core/runtime/vm/lepus/quick_context_pool.h"
+#include "core/template_bundle/template_codec/binary_decoder/parallel_parse_task_scheduler.h"
 #include "core/template_bundle/template_codec/compile_options.h"
 #include "core/template_bundle/template_codec/header_ext_info.h"
 #include "core/template_bundle/template_codec/moulds.h"
@@ -119,7 +120,13 @@ class LynxTemplateBundle final {
 
   lepus::Value GetCustomSection(const std::string &key);
 
+  void GreedyConstructElements();
+
+  std::optional<Elements> TryGetElements(const std::string &key);
+
  private:
+  void EnsureParseTaskScheduler();
+
   // header info.
   uint32_t total_size_{0};
   bool is_lepusng_binary_{false};
@@ -199,6 +206,8 @@ class LynxTemplateBundle final {
   // timing
   uint64_t decode_start_timestamp_{0};
   uint64_t decode_end_timestamp_{0};
+
+  std::shared_ptr<ParallelParseTaskScheduler> task_schedular_{nullptr};
 
   friend class LynxBinaryReader;
   friend class TemplateAssembler;

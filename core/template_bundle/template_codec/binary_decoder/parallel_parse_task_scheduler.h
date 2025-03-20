@@ -6,6 +6,7 @@
 #define CORE_TEMPLATE_BUNDLE_TEMPLATE_CODEC_BINARY_DECODER_PARALLEL_PARSE_TASK_SCHEDULER_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -36,12 +37,23 @@ class ParallelParseTaskScheduler {
   ElementTemplateResult TryGetElementTemplateParseResult(
       const std::string& key);
 
+  void ConstructElement(const std::string& key,
+                        const std::shared_ptr<ElementTemplateInfo>& info,
+                        bool sync);
+  std::optional<Elements> TryGetElements(
+      const std::string& key, const std::shared_ptr<ElementTemplateInfo>& info);
+
  private:
   base::OnceTaskRefptr<int32_t> generate_element_template_parse_task_;
   std::unordered_map<std::string,
                      base::OnceTaskRefptr<std::pair<
                          std::shared_ptr<ElementTemplateInfo>, Elements>>>
       element_template_parse_task_map_;
+
+  std::mutex elements_mutex_;
+
+  std::unordered_map<std::string, base::OnceTaskRefptr<Elements>>
+      construct_element_task_map_;
 };
 
 }  // namespace tasm

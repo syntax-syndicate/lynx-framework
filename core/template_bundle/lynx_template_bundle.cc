@@ -4,6 +4,8 @@
 
 #include "core/template_bundle/lynx_template_bundle.h"
 
+#include "core/template_bundle/template_codec/binary_decoder/element_binary_reader.h"
+
 namespace lynx {
 namespace tasm {
 
@@ -76,6 +78,27 @@ bool LynxTemplateBundle::ShouldReuseLepusContext() const {
   // the lepus context of dynamic component in FiberArch should reuse the
   // context in card
   return !IsCard() && compile_options_.enable_fiber_arch_;
+}
+
+void LynxTemplateBundle::EnsureParseTaskScheduler() {
+  if (task_schedular_ == nullptr) {
+    task_schedular_ = std::make_shared<ParallelParseTaskScheduler>();
+  }
+}
+
+void LynxTemplateBundle::GreedyConstructElements() {
+  EnsureParseTaskScheduler();
+  for (const auto &pair : element_template_infos_) {
+    task_schedular_->ConstructElement(pair.first, pair.second, true);
+  }
+}
+
+std::optional<Elements> LynxTemplateBundle::TryGetElements(
+    const std::string &key) {
+  if (task_schedular_ == nullptr) {
+    return std::nullopt;
+  }
+  return task_schedular_->TryGetElements(key, element_template_infos_[key]);
 }
 
 }  // namespace tasm

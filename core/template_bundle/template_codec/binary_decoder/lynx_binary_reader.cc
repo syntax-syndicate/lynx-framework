@@ -217,6 +217,7 @@ bool LynxBinaryReader::DecodeElementTemplateSection() {
   TRACE_EVENT(LYNX_TRACE_CATEGORY, "DecodeElementTemplateSection");
   ERROR_UNLESS(DecodeElementTemplatesRouter());
   ERROR_UNLESS(GreedyDecodeElementTemplateSection());
+  ERROR_UNLESS(GreedyConstructElements());
   return true;
 }
 
@@ -260,6 +261,18 @@ bool LynxBinaryReader::GreedyDecodeElementTemplateSection() {
   for (const auto& [key, offset] : element_templates_router_.start_offsets_) {
     auto info = DecodeTemplatesInfoWithKey(key);
     tb.element_template_infos_.emplace(key, std::move(info));
+  }
+  return true;
+}
+
+bool LynxBinaryReader::GreedyConstructElements() {
+  // TODO(songshourui.null): Optimize the logic here. When executing
+  // GreedyConstructElements, template_bundle().page_configs_ is not available
+  // yet, so we need to check page_configs_ here. After optimization,
+  // template_bundle().page_configs_ should be ready here. And we can directly
+  // call template_bundle().ParallelConstructElement.
+  if (page_configs_ && page_configs_->GetEnableParallelParseElementTemplate()) {
+    template_bundle().ParallelConstructElement();
   }
   return true;
 }

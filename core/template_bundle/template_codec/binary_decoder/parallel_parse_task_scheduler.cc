@@ -7,6 +7,7 @@
 #include "base/include/fml/concurrent_message_loop.h"
 #include "base/trace/native/internal_trace_category.h"
 #include "base/trace/native/trace_event.h"
+#include "core/renderer/dom/fiber/fiber_element.h"
 #include "core/renderer/dom/fiber/tree_resolver.h"
 #include "core/renderer/utils/base/element_template_info.h"
 #include "core/template_bundle/template_codec/binary_decoder/element_binary_reader.h"
@@ -28,6 +29,12 @@ ParallelParseTaskScheduler::~ParallelParseTaskScheduler() {
     pair.second->GetFuture().get();
   }
   element_template_parse_task_map_.clear();
+
+  for (auto& pair : construct_element_task_map_) {
+    pair.second->Run();
+    pair.second->GetFuture().get();
+  }
+  construct_element_task_map_.clear();
 }
 
 bool ParallelParseTaskScheduler::ParallelParseElementTemplate(
@@ -104,6 +111,65 @@ ParallelParseTaskScheduler::TryGetElementTemplateParseResult(
   auto res = iter->second->GetFuture().get();
   element_template_parse_task_map_.erase(iter);
   return res;
+}
+
+void ParallelParseTaskScheduler::ConstructElement(
+    const std::string& key, const std::shared_ptr<ElementTemplateInfo>& info,
+    bool sync) {
+  TRACE_EVENT(LYNX_TRACE_CATEGORY, "TemplateParallelReader::ConstructElement");
+  if (info == nullptr) {
+    return;
+  }
+
+  std::promise<Elements> promise;
+  std::future<Elements> future = promise.get_future();
+  auto task_info_ptr = fml::MakeRefCounted<base::OnceTask<Elements>>(
+      [key, info, promise = std::move(promise)]() mutable {
+        TRACE_EVENT(LYNX_TRACE_CATEGORY,
+                    "ElementBinaryReader::RunConstructElementTask",
+                    [key](lynx::perfetto::EventContext ctx) {
+                      auto* tagInfo = ctx.event()->add_debug_annotations();
+                      tagInfo->set_name("key");
+                      tagInfo->set_string_value(key.c_str());
+                    });
+        promise.set_value(TreeResolver::FromTemplateInfo(*info));
+        return;
+      },
+      std::move(future));
+  if (sync) {
+    task_info_ptr->Run();
+  } else {
+    base::TaskRunnerManufactor::PostTaskToConcurrentLoop(
+        [task_info_ptr]() { task_info_ptr->Run(); },
+        base::ConcurrentTaskType::HIGH_PRIORITY);
+  }
+  construct_element_task_map_[key] = task_info_ptr;
+}
+
+std::optional<Elements> ParallelParseTaskScheduler::TryGetElements(
+    const std::string& key, const std::shared_ptr<ElementTemplateInfo>& info) {
+  TRACE_EVENT(LYNX_TRACE_CATEGORY, "TemplateParallelReader::TryGetElements");
+  std::unique_lock<std::mutex> locker(elements_mutex_);
+
+  if (locker.owns_lock()) {
+    TRACE_EVENT(LYNX_TRACE_CATEGORY,
+                "TemplateParallelReader::TryGetElementsGetLock");
+    auto iter = construct_element_task_map_.find(key);
+    if (iter == construct_element_task_map_.end()) {
+      ConstructElement(key, info, false);
+      return std::nullopt;
+    }
+    {
+      TRACE_EVENT(LYNX_TRACE_CATEGORY,
+                  "TemplateParallelReader::TryGetElementsSuccess");
+      iter->second->Run();
+      auto res = iter->second->GetFuture().get();
+      ConstructElement(key, info, false);
+      return res;
+    }
+  }
+
+  return std::nullopt;
 }
 
 }  // namespace tasm
