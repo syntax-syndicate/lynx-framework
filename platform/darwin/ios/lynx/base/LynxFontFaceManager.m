@@ -430,7 +430,9 @@ typedef struct _LynxInnerFontInfo {
                                message:[NSString stringWithFormat:@"Font registration failed: %@",
                                                                   errorDescription]
                          fixSuggestion:LynxErrorSuggestionRefOfficialSite
-                                 level:LynxErrorLevelWarn];
+                                 level:LynxErrorLevelWarn
+                            customInfo:nil
+                          isLogBoxOnly:regResult];
       [lynxError addCustomInfo:newFontName forKey:@"font_name"];
       [self reportResourceError:lynxError withLynxView:lynxView resourceUrl:cacheKey];
       CFRelease(errorDescription);
