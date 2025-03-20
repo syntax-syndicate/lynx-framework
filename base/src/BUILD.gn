@@ -120,6 +120,7 @@ source_set("base") {
     "../include/expected_internal.h",
     "../include/float_comparison.h",
     "../include/fml/concurrent_message_loop.h",
+    "../include/fml/cpu_affinity.h",
     "../include/fml/delayed_task.h",
     "../include/fml/eintr_wrapper.h",
     "../include/fml/macros.h",
@@ -176,6 +177,7 @@ source_set("base") {
     "../include/version_util.h",
     "//build/build_config.h",
     "fml/concurrent_message_loop.cc",
+    "fml/cpu_affinity.cc",
     "fml/delayed_task.cc",
     "fml/memory/task_runner_checker.cc",
     "fml/memory/weak_ptr_internal.cc",
@@ -206,12 +208,14 @@ source_set("base") {
 
   if (is_android) {
     sources += [
+      "../include/fml/platform/android/cpu_affinity.h",
       "../include/fml/platform/android/message_loop_android.h",
       "../include/fml/synchronization/shared_mutex_std.h",
       "../include/platform/android/java_type.h",
       "../include/platform/android/jni_convert_helper.h",
       "../include/platform/android/jni_utils.h",
       "../include/platform/android/scoped_java_ref.h",
+      "fml/platform/android/cpu_affinity.cc",
       "fml/platform/android/thread_config_setter_android.cc",
       "fml/platform/posix/thread_name_setter_posix.cc",
       "fml/synchronization/shared_mutex_std.cc",
@@ -313,6 +317,7 @@ if (enable_unittests) {
       "datauri_utils_unittest.cc",
       "debug/lynx_error_unittest.cc",
       "expected_unittest.cc",
+      "fml/cpu_affinity_unittests.cc",
       "fml/hash_combine_unittests.cc",
       "fml/memory/ref_counted_unittest.cc",
       "fml/memory/task_runner_checker_unittest.cc",
